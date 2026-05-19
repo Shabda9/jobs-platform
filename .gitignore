@@ -1,0 +1,13 @@
+node_modules
+dist
+.output
+.nuxt
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage
+*.log
+apps/web/.capacitor
+apps/web/android
+apps/web/ios
