@@ -1,13 +1,47 @@
+# Dependencies
 node_modules
-dist
-.output
-.nuxt
+
+# Environment (never commit secrets)
 .env
 .env.*
 !.env.example
-.DS_Store
-coverage
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage
+.nyc_output
+
+# NestJS / Node build
+dist
+build
+*.tsbuildinfo
+
+# Nuxt
+.output
+.nuxt
+.data
+.vercel
+
+# Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+
+# IDE
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Capacitor (future mobile wrapper)
 apps/web/.capacitor
 apps/web/android
 apps/web/ios

@@ -1,6 +1,8 @@
 {
-  "name": "job-board-platform",
+  "name": "jobs-platform",
+  "version": "0.0.1",
   "private": true,
+  "description": "MVP job listing platform for Australia (npm workspaces monorepo)",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -12,5 +14,8 @@
     "build:api": "npm run build -w apps/api",
     "lint:web": "npm run lint -w apps/web",
     "lint:api": "npm run lint -w apps/api"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
