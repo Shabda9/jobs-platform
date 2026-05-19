@@ -1,12 +1,251 @@
-// Prisma schema is the database source of truth.
-// Models will be added in a later step.
+// Prisma schema is the database source of truth for Supabase Cloud PostgreSQL.
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+// --- Enums ---
+
+enum UserRole {
+  ADMIN
+  EMPLOYER
+}
+
+enum JobStatus {
+  draft
+  pending_payment
+  pending_review
+  published
+  rejected
+  closed
+  expired
+}
+
+enum ApplicationStatus {
+  new
+  shortlisted
+  rejected
+  hired
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum EmailLogStatus {
+  pending
+  sent
+  failed
+}
+
+// --- Models ---
+
+model AppUser {
+  id                 String   @id @default(cuid())
+  supabaseAuthUserId String   @unique
+  email              String   @unique
+  role               UserRole
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  employerProfile EmployerProfile?
+  adminActions    AdminAction[]
+  uploadedFiles   UploadedFile[]
+
+  @@map("app_users")
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  abn         String?
+  industry    String?
+  website     String?
+  phone       String?
+  email       String?
+  location    String?
+  address     String?
+  logoUrl     String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employerProfiles EmployerProfile[]
+  jobs             Job[]
+  payments         Payment[]
+
+  @@map("companies")
+}
+
+model EmployerProfile {
+  id            String   @id @default(cuid())
+  appUserId     String   @unique
+  companyId     String
+  contactName   String
+  contactPhone  String?
+  positionTitle String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  appUser AppUser @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@map("employer_profiles")
+}
+
+model JobCategory {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobs Job[]
+
+  @@map("job_categories")
+}
+
+model Job {
+  id                           String    @id @default(cuid())
+  companyId                    String
+  categoryId                   String
+  title                        String
+  slug                         String    @unique
+  location                     String
+  employmentType               String
+  salaryMin                    Int?
+  salaryMax                    Int?
+  salaryText                   String?
+  description                  String    @db.Text
+  responsibilities             String?   @db.Text
+  requirements                 String?   @db.Text
+  benefits                     String?   @db.Text
+  requiredLicenceOrCertificate String?
+  workRightsRequirement        String?
+  applicationDeadline          DateTime?
+  status                       JobStatus @default(draft)
+  publishedAt                  DateTime?
+  expiresAt                    DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  category     JobCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  applications Application[]
+  payments     Payment[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("jobs")
+}
+
+model Application {
+  id                   String            @id @default(cuid())
+  jobId                String
+  fullName             String
+  email                String
+  phone                String?
+  coverMessage         String?           @db.Text
+  availability         String?
+  workRights           String?
+  experienceSummary    String?           @db.Text
+  licenceOrCertificate String?
+  status               ApplicationStatus @default(new)
+  resumeFileId         String?           @unique
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  job        Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeFile UploadedFile? @relation(fields: [resumeFileId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([status])
+  @@index([email])
+  @@map("applications")
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  jobId                 String
+  companyId             String
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("AUD")
+  status                PaymentStatus @default(pending)
+  stripeSessionId       String?       @unique
+  stripePaymentIntentId String?       @unique
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  job     Job     @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([jobId])
+  @@index([companyId])
+  @@index([status])
+  @@map("payments")
+}
+
+model UploadedFile {
+  id                  String   @id @default(cuid())
+  bucket              String
+  path                String
+  originalFileName    String
+  mimeType            String
+  size                Int
+  uploadedByAppUserId String?
+  createdAt           DateTime @default(now())
+
+  uploadedByAppUser AppUser?     @relation(fields: [uploadedByAppUserId], references: [id], onDelete: SetNull)
+  application       Application?
+
+  @@unique([bucket, path])
+  @@index([uploadedByAppUserId])
+  @@map("uploaded_files")
+}
+
+model EmailLog {
+  id                String         @id @default(cuid())
+  to                String
+  subject           String
+  template          String
+  status            EmailLogStatus @default(pending)
+  providerMessageId String?
+  errorMessage      String?        @db.Text
+  createdAt         DateTime       @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_logs")
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  adminUserId String
+  actionType  String
+  entityType  String
+  entityId    String
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  adminUser AppUser @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  @@index([adminUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_actions")
 }

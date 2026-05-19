@@ -9,8 +9,10 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "baseUrl": "./",
+    "paths": {
+      "@prisma/client": ["./node_modules/.prisma/client/default"]
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -21,6 +23,6 @@
     "esModuleInterop": true,
     "moduleResolution": "node"
   },
-  "include": ["src"],
+  "include": ["src/**/*", "prisma/**/*.ts"],
   "exclude": ["node_modules", "dist", "test"]
 }
