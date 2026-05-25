@@ -4,36 +4,56 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ApplicationStatus, JobStatus } from '@prisma/client';
+import { FilesService } from '../files/files.service';
+import type { ResumeUploadFile } from '../files/types/resume-upload-file';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly filesService: FilesService,
+  ) {}
 
-  async createForJob(jobId: string, dto: CreateApplicationDto) {
+  /**
+   * Full candidate application: validate job, upload private resume, create Application.
+   */
+  async createForJob(
+    jobId: string,
+    dto: CreateApplicationDto,
+    resume: ResumeUploadFile,
+  ) {
     await this.assertJobAcceptsApplications(jobId);
 
-    const application = await this.prisma.application.create({
-      data: {
-        jobId,
-        fullName: dto.fullName.trim(),
-        email: dto.email.trim().toLowerCase(),
-        phone: dto.phone?.trim() || null,
-        coverMessage: dto.coverMessage?.trim() || null,
-        availability: dto.availability?.trim() || null,
-        workRights: dto.workRights?.trim() || null,
-        experienceSummary: dto.experienceSummary?.trim() || null,
-        licenceOrCertificate: dto.licenceOrCertificate?.trim() || null,
-        status: ApplicationStatus.new,
-      },
-      select: { id: true },
-    });
+    const uploaded = await this.filesService.uploadResume(resume);
 
-    return {
-      message: 'Application submitted successfully',
-      applicationId: application.id,
-    };
+    try {
+      const application = await this.prisma.application.create({
+        data: {
+          jobId,
+          fullName: dto.fullName.trim(),
+          email: dto.email.trim().toLowerCase(),
+          phone: dto.phone?.trim() || null,
+          coverMessage: dto.coverMessage?.trim() || null,
+          availability: dto.availability?.trim() || null,
+          workRights: dto.workRights?.trim() || null,
+          experienceSummary: dto.experienceSummary?.trim() || null,
+          licenceOrCertificate: dto.licenceOrCertificate?.trim() || null,
+          status: ApplicationStatus.new,
+          resumeFileId: uploaded.fileId,
+        },
+        select: { id: true },
+      });
+
+      return {
+        message: 'Application submitted successfully',
+        applicationId: application.id,
+      };
+    } catch (error) {
+      await this.filesService.deleteUploadedResume(uploaded.fileId);
+      throw error;
+    }
   }
 
   private async assertJobAcceptsApplications(jobId: string): Promise<void> {

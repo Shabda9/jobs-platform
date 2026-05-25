@@ -90,6 +90,25 @@ export class FilesService {
     }
   }
 
+  /**
+   * Removes an uploaded resume from Storage and the UploadedFile table (rollback).
+   */
+  async deleteUploadedResume(fileId: string): Promise<void> {
+    const record = await this.prisma.uploadedFile.findUnique({
+      where: { id: fileId },
+      select: { id: true, bucket: true, path: true },
+    });
+
+    if (!record) {
+      return;
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+    await this.removeStorageObject(supabase, record.path);
+
+    await this.prisma.uploadedFile.delete({ where: { id: fileId } });
+  }
+
   validateResumeFile(file: ResumeUploadFile): void {
     if (!file.buffer?.length) {
       throw new BadRequestException('Resume file is required');

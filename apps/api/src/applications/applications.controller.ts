@@ -1,16 +1,49 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { RESUME_MAX_BYTES } from '../files/files.constants';
 import { ApplicationsService } from './applications.service';
-import { CreateApplicationDto } from './dto/create-application.dto';
+import { parseCreateApplicationBody } from './parse-create-application-body';
+import { toResumeUploadFile } from './to-resume-upload-file';
 
 @Controller('jobs')
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
 
+  /**
+   * Submit a candidate application with resume (multipart/form-data).
+   * Text fields + file field `resume` (PDF, DOC, DOCX, max 5MB).
+   */
   @Post(':id/applications')
-  create(
+  @UseInterceptors(
+    FileInterceptor('resume', {
+      limits: { fileSize: RESUME_MAX_BYTES },
+    }),
+  )
+  async create(
     @Param('id') jobId: string,
-    @Body() dto: CreateApplicationDto,
+    @Body() body: Record<string, unknown>,
+    @UploadedFile() resume?: Express.Multer.File,
   ) {
-    return this.applicationsService.createForJob(jobId, dto);
+    const dto = await parseCreateApplicationBody(body);
+
+    if (!resume) {
+      throw new BadRequestException(
+        'Resume file is required (multipart field name: resume)',
+      );
+    }
+
+    return this.applicationsService.createForJob(
+      jobId,
+      dto,
+      toResumeUploadFile(resume),
+    );
   }
 }
