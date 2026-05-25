@@ -8,8 +8,8 @@ Australian job listing MVP for blue-collar, trades, VET, hospitality, cleaning, 
 
 | Path | Purpose |
 |------|---------|
-| `apps/web` | Nuxt 4 frontend (not scaffolded yet) |
-| `apps/api` | NestJS backend (not scaffolded yet) |
+| `apps/web` | Nuxt 4 frontend (public job seeker pages) |
+| `apps/api` | NestJS backend (public jobs API) |
 | `packages/shared` | Shared constants, types, schemas |
 | `packages/api-client` | Shared API client (later) |
 | `docs/` | Build playbook, DB design, API contract, flows |
@@ -35,9 +35,8 @@ Supabase provides PostgreSQL, Auth, and Storage. All business logic runs in Nest
 2. Copy `apps/web/.env.example` → `apps/web/.env` and add public Supabase + API URL only.
 3. See root `.env.example` for a variable reference.
 
-**Never** commit `.env` files or put `SUPABASE_SERVICE_ROLE_KEY` in the web app.
 
-## Scripts (after apps are scaffolded)
+## Scripts
 
 ```bash
 npm install
@@ -45,7 +44,7 @@ npm run dev:api   # NestJS on :4000
 npm run dev:web   # Nuxt on :3000
 ```
 
-Until `apps/api` and `apps/web` have `package.json` files, workspace dev scripts will not run.
+Run `npm install` once at the repo root, then use `npm run dev:api` and `npm run dev:web` together for local development.
 
 ## Documentation
 

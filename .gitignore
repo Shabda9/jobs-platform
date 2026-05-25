@@ -29,8 +29,11 @@ build
 # Nuxt
 .output
 .nuxt
+.nitro
+.cache
 .data
 .vercel
+logs
 
 # Prisma
 apps/api/prisma/*.db
