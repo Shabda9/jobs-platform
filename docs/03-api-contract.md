@@ -135,7 +135,7 @@ Response:
 3. Public Application API
 POST /jobs/:id/applications
 
-Allows a job seeker to apply for a job.
+Allows a job seeker to apply for a job with a resume upload.
 
 Authentication:
 
@@ -145,32 +145,98 @@ Request type:
 
 multipart/form-data
 
-Fields:
+Required fields:
 
-fullName
-email
-phone
-coverMessage
-availability
-workRights
-experienceSummary
-licenceOrCertificate
-resume
+- fullName (string, max 200)
+- email (valid email, max 320)
+- resume (file: PDF, DOC, or DOCX, max 5MB)
 
-Rules:
+Optional fields:
 
-Job must be published.
-Job must not be expired.
-Resume must be PDF, DOC, or DOCX.
-Resume max size should be 5MB.
-Application status starts as new.
+- phone (max 10)
+- coverMessage (max 5000)
+- availability (max 500)
+- workRights (max 500)
+- experienceSummary (max 5000)
+- licenceOrCertificate (max 500)
 
-Response:
+Business rules:
 
+- Job must exist.
+- Job status must be published (draft, pending_review, rejected, closed, etc. are rejected).
+- Job must not be expired (expiresAt must be null or in the future).
+- Resume is uploaded to private Supabase Storage bucket resumes via the backend (service role only).
+- Application status starts as new.
+- resumeFileId links the application to UploadedFile metadata.
+
+Success response (200):
+
+```json
 {
   "message": "Application submitted successfully",
   "applicationId": "application-id"
 }
+```
+
+Error responses:
+
+Validation (400) — invalid or missing form fields:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Please check the highlighted fields and try again.",
+  "errors": ["Full name is required", "Enter a valid email address"]
+}
+```
+
+Resume validation (400):
+
+```json
+{
+  "statusCode": 400,
+  "message": "Resume must be 5MB or smaller",
+  "errors": ["Resume must be 5MB or smaller"]
+}
+```
+
+```json
+{
+  "statusCode": 400,
+  "message": "Resume must be a PDF, DOC, or DOCX file",
+  "errors": ["Resume must be a PDF, DOC, or DOCX file"]
+}
+```
+
+Job not found (404):
+
+```json
+{
+  "statusCode": 404,
+  "message": "This job was not found.",
+  "errors": ["This job was not found."]
+}
+```
+
+Job not accepting applications (400):
+
+```json
+{
+  "statusCode": 400,
+  "message": "This job is not accepting applications. It may be unpublished or still pending review.",
+  "errors": ["This job is not accepting applications. It may be unpublished or still pending review."]
+}
+```
+
+Job expired (400):
+
+```json
+{
+  "statusCode": 400,
+  "message": "This job has expired and is no longer accepting applications.",
+  "errors": ["This job has expired and is no longer accepting applications."]
+}
+```
 4. Employer Auth APIs
 POST /employers/register
 

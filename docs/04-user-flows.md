@@ -59,11 +59,17 @@ Receive confirmation
 - Resume, cover message, availability, work rights
 - Experience summary, licence/certificate (if relevant)
 
-### Success outcome
+### Success outcome (implemented in MVP slice)
 
 - Application saved with `status = new`
-- Candidate receives confirmation email
-- Employer can view the application in their dashboard
+- Resume stored in private Supabase Storage; metadata in `UploadedFile`; `resumeFileId` set on the application
+- Candidate sees on-screen confirmation: **Application submitted successfully**
+- NestJS endpoint: `POST /jobs/:id/applications` (multipart/form-data)
+
+### Not yet implemented
+
+- Confirmation email to candidate
+- Employer dashboard to view applications
 
 ---
 
@@ -161,7 +167,14 @@ Published jobs live **30 days** after approval, then become `expired` and drop f
 
 ## 9. Resume Access Flow
 
-- Candidate uploads resume → NestJS validates → private Supabase bucket → metadata in `UploadedFile`
+**Implemented (candidate apply):**
+
+- Candidate selects resume in Nuxt apply form (client validates type and 5MB)
+- Nuxt sends multipart request to NestJS only (never uploads to Supabase from the browser)
+- NestJS validates job (published, not expired), resume file, uploads to private bucket `resumes`, creates `UploadedFile` + `Application`
+
+**Not yet implemented:**
+
 - Employer views application → backend checks ownership → signed URL (temporary)
 
 Resumes must never be public URLs.
