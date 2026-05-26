@@ -27,7 +27,7 @@ export class CreateApplicationDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(10)
   @Transform(emptyToUndefined)
   phone?: string;
 

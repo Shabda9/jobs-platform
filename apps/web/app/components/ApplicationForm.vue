@@ -6,8 +6,16 @@ import {
   type ApplicationFormSchema,
   type ApplicationFormState
 } from '~/schemas/application-form.schema'
+import {
+  APPLICATION_FORM_MESSAGES,
+  RESUME_FORM_MESSAGES
+} from '~/utils/application-messages'
 import { parseApiError } from '~/utils/api-error'
-import { formatResumeSize, RESUME_ACCEPT } from '~/utils/application'
+import {
+  formatResumeSize,
+  getResumeValidationError,
+  RESUME_ACCEPT
+} from '~/utils/application'
 
 const props = defineProps<{
   jobId: string
@@ -25,7 +33,9 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const state = reactive(createApplicationFormState())
 const submitting = ref(false)
 const submitSuccess = ref(false)
+const submitErrorTitle = ref<string>(APPLICATION_FORM_MESSAGES.submitErrorTitle)
 const submitErrors = ref<string[]>([])
+const resumeFieldError = ref<string | null>(null)
 
 const selectedResumeName = computed(() => state.resume?.name ?? null)
 
@@ -39,6 +49,8 @@ function resetForm() {
   Object.assign(state, createApplicationFormState())
   submitSuccess.value = false
   submitErrors.value = []
+  submitErrorTitle.value = APPLICATION_FORM_MESSAGES.submitErrorTitle
+  resumeFieldError.value = null
   clearResume()
 }
 
@@ -54,12 +66,21 @@ watch(
 function onResumeChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  state.resume = file
+
   submitErrors.value = []
+  resumeFieldError.value = getResumeValidationError(file)
+
+  if (resumeFieldError.value) {
+    state.resume = undefined
+    return
+  }
+
+  state.resume = file
 }
 
 function clearResume() {
   state.resume = undefined
+  resumeFieldError.value = null
   if (fileInputRef.value) {
     fileInputRef.value.value = ''
   }
@@ -70,8 +91,15 @@ async function onSubmit(event: FormSubmitEvent<ApplicationFormSchema>) {
     return
   }
 
+  const resumeError = getResumeValidationError(event.data.resume)
+  if (resumeError) {
+    resumeFieldError.value = resumeError
+    return
+  }
+
   submitting.value = true
   submitErrors.value = []
+  submitErrorTitle.value = APPLICATION_FORM_MESSAGES.submitErrorTitle
 
   try {
     const response = await submitJobApplication(props.jobId, event.data)
@@ -79,6 +107,7 @@ async function onSubmit(event: FormSubmitEvent<ApplicationFormSchema>) {
     emit('submitted', response.applicationId)
   } catch (error) {
     const parsed = parseApiError(error)
+    submitErrorTitle.value = parsed.title
     submitErrors.value = parsed.messages
   } finally {
     submitting.value = false
@@ -101,16 +130,26 @@ async function onSubmit(event: FormSubmitEvent<ApplicationFormSchema>) {
       v-if="submitSuccess"
       color="success"
       variant="subtle"
-      title="Application submitted successfully."
-      description="The employer will review your application. You can close this window."
+      :title="`${APPLICATION_FORM_MESSAGES.submitSuccess}.`"
+      :description="APPLICATION_FORM_MESSAGES.submitSuccessDetail"
       icon="i-lucide-circle-check"
     />
 
     <UAlert
-      v-if="submitErrors.length && !submitSuccess"
+      v-if="submitting"
+      color="primary"
+      variant="subtle"
+      :title="APPLICATION_FORM_MESSAGES.submitting"
+      description="Please wait while we save your application and resume."
+      icon="i-lucide-loader-circle"
+      :ui="{ icon: 'animate-spin' }"
+    />
+
+    <UAlert
+      v-if="submitErrors.length && !submitSuccess && !submitting"
       color="error"
       variant="subtle"
-      title="Could not submit application"
+      :title="submitErrorTitle"
       icon="i-lucide-circle-alert"
     >
       <template #description>
@@ -254,7 +293,8 @@ async function onSubmit(event: FormSubmitEvent<ApplicationFormSchema>) {
           name="resume"
           required
           class="sm:col-span-2"
-          description="PDF, DOC, or DOCX — maximum 5MB"
+          :error="resumeFieldError ?? undefined"
+          :description="RESUME_FORM_MESSAGES.hint"
         >
           <div class="space-y-3">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -288,8 +328,16 @@ async function onSubmit(event: FormSubmitEvent<ApplicationFormSchema>) {
               />
             </div>
 
+            <p
+              v-if="resumeFieldError"
+              class="text-sm text-error"
+              role="alert"
+            >
+              {{ resumeFieldError }}
+            </p>
+
             <div
-              v-if="selectedResumeName"
+              v-else-if="selectedResumeName"
               class="flex items-start gap-2 rounded-lg border border-default bg-elevated/50 px-3 py-2 text-sm"
             >
               <UIcon
@@ -315,7 +363,7 @@ async function onSubmit(event: FormSubmitEvent<ApplicationFormSchema>) {
       <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end pt-2">
         <UButton
           type="submit"
-          label="Submit application"
+          :label="submitting ? 'Submitting…' : 'Submit application'"
           icon="i-lucide-send"
           color="primary"
           size="lg"

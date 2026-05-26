@@ -1,5 +1,7 @@
 /** Mirrors backend resume rules (apps/api/src/files/files.constants.ts). */
 
+import { RESUME_FORM_MESSAGES } from '~/utils/application-messages'
+
 export const RESUME_MAX_BYTES = 5 * 1024 * 1024
 
 export const RESUME_ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx'] as const
@@ -27,4 +29,21 @@ export function formatResumeSize(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`
   }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** Immediate client-side resume validation (on file pick and before submit). */
+export function getResumeValidationError(file: File | undefined): string | null {
+  if (!file || file.size === 0) {
+    return RESUME_FORM_MESSAGES.required
+  }
+
+  if (file.size > RESUME_MAX_BYTES) {
+    return RESUME_FORM_MESSAGES.maxSize
+  }
+
+  if (!isAllowedResumeFile(file)) {
+    return RESUME_FORM_MESSAGES.fileType
+  }
+
+  return null
 }

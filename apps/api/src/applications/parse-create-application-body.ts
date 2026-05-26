@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { APPLICATION_MESSAGES } from './applications.messages';
 import { CreateApplicationDto } from './dto/create-application.dto';
 
 /**
@@ -25,7 +26,7 @@ export async function parseCreateApplicationBody(
     );
 
     throw new BadRequestException({
-      message: 'Validation failed',
+      message: APPLICATION_MESSAGES.validationFailed,
       errors: messages,
     });
   }

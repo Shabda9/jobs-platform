@@ -1,4 +1,5 @@
 import type { ApiErrorBody } from '~/types/api'
+import { APPLICATION_FORM_MESSAGES } from '~/utils/application-messages'
 
 export interface ParsedApiError {
   title: string
@@ -24,6 +25,10 @@ function extractBody(error: unknown): ApiErrorBody | null {
   return null
 }
 
+function dedupeMessages(messages: string[]): string[] {
+  return [...new Set(messages.filter(Boolean))]
+}
+
 /** Maps $fetch / ofetch errors from the NestJS API into user-facing messages. */
 export function parseApiError(error: unknown): ParsedApiError {
   const body = extractBody(error)
@@ -31,28 +36,27 @@ export function parseApiError(error: unknown): ParsedApiError {
   if (body) {
     const fromErrors = body.errors ?? []
     const fromMessage = normaliseMessage(body.message)
-    const messages =
-      fromErrors.length > 0 ? fromErrors : fromMessage.filter(Boolean)
+    const messages = dedupeMessages(
+      fromErrors.length > 0 ? fromErrors : fromMessage
+    )
 
     if (messages.length > 0) {
-      const title =
-        typeof body.message === 'string' && body.message !== 'Validation failed'
-          ? body.message
-          : 'Could not submit application'
-
-      return { title, messages }
+      return {
+        title: APPLICATION_FORM_MESSAGES.submitErrorTitle,
+        messages
+      }
     }
   }
 
   if (error instanceof Error && error.message) {
     return {
-      title: 'Request failed',
+      title: APPLICATION_FORM_MESSAGES.submitErrorTitle,
       messages: [error.message]
     }
   }
 
   return {
-    title: 'Request failed',
-    messages: ['Something went wrong. Please try again.']
+    title: APPLICATION_FORM_MESSAGES.submitErrorTitle,
+    messages: [APPLICATION_FORM_MESSAGES.networkError]
   }
 }

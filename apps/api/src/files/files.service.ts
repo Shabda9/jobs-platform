@@ -15,6 +15,7 @@ import {
   RESUME_BUCKET,
   RESUME_MAX_BYTES,
 } from './files.constants';
+import { RESUME_VALIDATION_MESSAGES } from './files.messages';
 import type { ResumeUploadFile } from './types/resume-upload-file';
 
 export interface UploadedResumeResult {
@@ -111,28 +112,30 @@ export class FilesService {
 
   validateResumeFile(file: ResumeUploadFile): void {
     if (!file.buffer?.length) {
-      throw new BadRequestException('Resume file is required');
+      throw new BadRequestException({
+        message: RESUME_VALIDATION_MESSAGES.required,
+        errors: [RESUME_VALIDATION_MESSAGES.required],
+      });
     }
 
     if (file.size > RESUME_MAX_BYTES) {
-      throw new BadRequestException('Resume must be 5MB or smaller');
-    }
-
-    if (!RESUME_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(
-        'Resume must be a PDF, DOC, or DOCX file',
-      );
+      throw new BadRequestException({
+        message: RESUME_VALIDATION_MESSAGES.maxSize,
+        errors: [RESUME_VALIDATION_MESSAGES.maxSize],
+      });
     }
 
     const extension = extname(file.originalname).toLowerCase();
-    if (
-      !RESUME_ALLOWED_EXTENSIONS.includes(
-        extension as (typeof RESUME_ALLOWED_EXTENSIONS)[number],
-      )
-    ) {
-      throw new BadRequestException(
-        'Resume file extension must be .pdf, .doc, or .docx',
-      );
+    const extensionAllowed = RESUME_ALLOWED_EXTENSIONS.includes(
+      extension as (typeof RESUME_ALLOWED_EXTENSIONS)[number],
+    );
+    const mimeAllowed = RESUME_ALLOWED_MIME_TYPES.has(file.mimetype);
+
+    if (!extensionAllowed || !mimeAllowed) {
+      throw new BadRequestException({
+        message: RESUME_VALIDATION_MESSAGES.fileType,
+        errors: [RESUME_VALIDATION_MESSAGES.fileType],
+      });
     }
   }
 

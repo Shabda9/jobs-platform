@@ -7,6 +7,7 @@ import { ApplicationStatus, JobStatus } from '@prisma/client';
 import { FilesService } from '../files/files.service';
 import type { ResumeUploadFile } from '../files/types/resume-upload-file';
 import { PrismaService } from '../prisma/prisma.service';
+import { APPLICATION_MESSAGES } from './applications.messages';
 import { CreateApplicationDto } from './dto/create-application.dto';
 
 @Injectable()
@@ -47,7 +48,7 @@ export class ApplicationsService {
       });
 
       return {
-        message: 'Application submitted successfully',
+        message: APPLICATION_MESSAGES.submitSuccess,
         applicationId: application.id,
       };
     } catch (error) {
@@ -63,16 +64,25 @@ export class ApplicationsService {
     });
 
     if (!job) {
-      throw new NotFoundException(`Job "${jobId}" not found`);
+      throw new NotFoundException({
+        message: APPLICATION_MESSAGES.jobNotFound,
+        errors: [APPLICATION_MESSAGES.jobNotFound],
+      });
     }
 
     if (job.status !== JobStatus.published) {
-      throw new BadRequestException('This job is not accepting applications');
+      throw new BadRequestException({
+        message: APPLICATION_MESSAGES.jobNotPublished,
+        errors: [APPLICATION_MESSAGES.jobNotPublished],
+      });
     }
 
     const now = new Date();
     if (job.expiresAt && job.expiresAt <= now) {
-      throw new BadRequestException('This job has expired');
+      throw new BadRequestException({
+        message: APPLICATION_MESSAGES.jobExpired,
+        errors: [APPLICATION_MESSAGES.jobExpired],
+      });
     }
   }
 }

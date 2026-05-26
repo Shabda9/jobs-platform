@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RESUME_MAX_BYTES } from '../files/files.constants';
+import { APPLICATION_MESSAGES } from './applications.messages';
 import { ApplicationsService } from './applications.service';
 import { parseCreateApplicationBody } from './parse-create-application-body';
 import { toResumeUploadFile } from './to-resume-upload-file';
@@ -35,9 +36,10 @@ export class ApplicationsController {
     const dto = await parseCreateApplicationBody(body);
 
     if (!resume) {
-      throw new BadRequestException(
-        'Resume file is required (multipart field name: resume)',
-      );
+      throw new BadRequestException({
+        message: APPLICATION_MESSAGES.resumeRequired,
+        errors: [APPLICATION_MESSAGES.resumeRequired],
+      });
     }
 
     return this.applicationsService.createForJob(

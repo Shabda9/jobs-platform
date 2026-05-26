@@ -1,13 +1,11 @@
 import { z } from 'zod'
-import {
-  isAllowedResumeFile,
-  RESUME_MAX_BYTES
-} from '~/utils/application'
+import { RESUME_FORM_MESSAGES } from '~/utils/application-messages'
+import { getResumeValidationError } from '~/utils/application'
 
-const optionalText = (max: number) =>
+const optionalText = (max: number, label: string) =>
   z
     .string()
-    .max(max, `Must be at most ${max} characters`)
+    .max(max, `${label} must be at most ${max} characters`)
     .optional()
     .or(z.literal(''))
 
@@ -22,27 +20,27 @@ export const applicationFormSchema = z.object({
     .trim()
     .min(1, 'Email is required')
     .email('Enter a valid email address')
-    .max(320, 'Email is too long'),
-  phone: optionalText(50),
-  coverMessage: optionalText(5000),
-  availability: optionalText(500),
-  workRights: optionalText(500),
-  experienceSummary: optionalText(5000),
-  licenceOrCertificate: optionalText(500),
+    .max(320, 'Email must be at most 320 characters'),
+  phone: optionalText(10, 'Phone'),
+  coverMessage: optionalText(5000, 'Cover message'),
+  availability: optionalText(500, 'Availability'),
+  workRights: optionalText(500, 'Work rights'),
+  experienceSummary: optionalText(5000, 'Experience summary'),
+  licenceOrCertificate: optionalText(500, 'Licence or certificate'),
   resume: z
     .custom<File>(
       (value) => value instanceof File,
-      { message: 'Resume is required' }
+      { message: RESUME_FORM_MESSAGES.required }
     )
-    .refine((file) => file.size > 0, 'Resume is required')
-    .refine(
-      (file) => file.size <= RESUME_MAX_BYTES,
-      'Resume must be 5MB or smaller'
-    )
-    .refine(
-      (file) => isAllowedResumeFile(file),
-      'Resume must be a PDF, DOC, or DOCX file'
-    )
+    .superRefine((file, ctx) => {
+      const error = getResumeValidationError(file)
+      if (error) {
+        ctx.addIssue({
+          code: 'custom',
+          message: error
+        })
+      }
+    })
 })
 
 export type ApplicationFormSchema = z.output<typeof applicationFormSchema>
