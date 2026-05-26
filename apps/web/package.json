@@ -13,6 +13,7 @@
   "dependencies": {
     "@iconify-json/lucide": "^1.2.108",
     "@nuxt/ui": "^4.7.1",
+    "@supabase/supabase-js": "^2.106.2",
     "nuxt": "^4.4.6",
     "tailwindcss": "^4.3.0",
     "zod": "^4.4.3"
