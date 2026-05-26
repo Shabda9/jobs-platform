@@ -1,4 +1,9 @@
-import type { JobSearchQuery } from '~/types/api'
+import type {
+  ApplicationSubmitResponse,
+  JobSearchQuery
+} from '~/types/api'
+import type { ApplicationFormSchema } from '~/schemas/application-form.schema'
+import { buildApplicationFormData } from '~/utils/application-form-data'
 
 export function useApiBaseUrl(): string {
   const config = useRuntimeConfig()
@@ -30,4 +35,18 @@ export async function apiFetch<T>(
   return $fetch<T>(buildApiUrl(path), {
     query: toApiQuery(query ?? {})
   })
+}
+
+/** Submit candidate application with resume (multipart/form-data). */
+export async function submitJobApplication(
+  jobId: string,
+  data: ApplicationFormSchema
+): Promise<ApplicationSubmitResponse> {
+  return $fetch<ApplicationSubmitResponse>(
+    buildApiUrl(`/jobs/${jobId}/applications`),
+    {
+      method: 'POST',
+      body: buildApplicationFormData(data)
+    }
+  )
 }

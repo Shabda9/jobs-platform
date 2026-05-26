@@ -12,7 +12,10 @@ const emit = defineEmits<{
   apply: []
 }>()
 
-const local = reactive({
+const local = reactive<{
+  category?: string
+  employmentType?: string
+}>({
   category: props.modelValue.category,
   employmentType: props.modelValue.employmentType
 })
@@ -30,7 +33,7 @@ const categoryItems = computed(() =>
   props.categories.map((c) => ({ label: c.name, value: c.slug }))
 )
 
-const employmentTypeItems = computed(() =>
+const employmentTypeItems = computed((): { label: string, value: string }[] =>
   EMPLOYMENT_TYPES.map((type) => ({ label: type, value: type }))
 )
 

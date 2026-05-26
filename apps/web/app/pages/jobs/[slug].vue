@@ -3,9 +3,9 @@ import type { JobDetail } from '~/types/api'
 import { formatJobDate, formatJobSalary } from '~/utils/job'
 
 const route = useRoute()
-const toast = useToast()
 
 const slug = computed(() => String(route.params.slug))
+const applyModalOpen = ref(false)
 
 const { data: job, pending, error } = await useAsyncData(
   () => `job-${slug.value}`,
@@ -33,15 +33,6 @@ watchEffect(() => {
     })
   }
 })
-
-function onApplyClick() {
-  toast.add({
-    title: 'Applications coming soon',
-    description: 'Online applications will be available in a future update.',
-    color: 'primary',
-    icon: 'i-lucide-info'
-  })
-}
 
 const detailSections = computed(() => {
   if (!job.value) {
@@ -208,14 +199,28 @@ const detailSections = computed(() => {
               color="primary"
               size="lg"
               block
-              @click="onApplyClick"
+              @click="applyModalOpen = true"
             />
             <p class="text-xs text-center text-muted">
-              Online applications are not open yet in this MVP slice.
+              Submit your details and resume online.
             </p>
           </UCard>
         </aside>
       </div>
+
+      <UModal
+        v-model:open="applyModalOpen"
+        title="Apply for this job"
+        :description="job.companyName"
+      >
+        <template #body>
+          <ApplicationForm
+            :job-id="job.id"
+            :job-title="job.title"
+            :open="applyModalOpen"
+          />
+        </template>
+      </UModal>
     </template>
 
     <EmptyState

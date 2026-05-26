@@ -49,3 +49,16 @@ export interface JobSearchQuery {
   category?: string
   employmentType?: string
 }
+
+export interface ApplicationSubmitResponse {
+  message: string
+  applicationId: string
+}
+
+/** NestJS HttpExceptionFilter error body shape */
+export interface ApiErrorBody {
+  statusCode?: number
+  message?: string | string[]
+  errors?: string[]
+  error?: string
+}
