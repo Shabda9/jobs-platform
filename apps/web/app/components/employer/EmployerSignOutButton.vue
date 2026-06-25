@@ -6,10 +6,21 @@ const { signOut } = useAuth()
 
 const signingOut = ref(false)
 
+/** Clear the Supabase session and return to the employer landing page. */
 async function onSignOut() {
   signingOut.value = true
   try {
-    await signOut()
+    const { error } = await signOut()
+
+    if (error) {
+      toast.add({
+        title: 'Could not log out',
+        description: error.message,
+        color: 'error'
+      })
+      return
+    }
+
     toast.add({
       title: EMPLOYER_AUTH_MESSAGES.logoutSuccess,
       color: 'success'
