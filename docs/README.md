@@ -7,5 +7,6 @@
 | [03-api-contract.md](./03-api-contract.md) | REST API v1 contract |
 | [04-user-flows.md](./04-user-flows.md) | Job seeker, employer, admin, and payment flows |
 | [05-release-checklist.md](./05-release-checklist.md) | Pre-demo and release verification |
+| [06-employer-auth.md](./06-employer-auth.md) | Employer sign-up, login, JWT verification, and API auth |
 
 Start with the playbook, then use 02–04 while implementing backend and frontend.
