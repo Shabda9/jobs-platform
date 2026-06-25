@@ -4,38 +4,47 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { AUTH_MESSAGES } from './auth.messages';
 import type { SupabaseJwtPayload } from './types/auth-request';
 
 @Injectable()
 export class SupabaseJwtService {
-  private readonly jwtSecret: string;
+  private readonly jwks: ReturnType<typeof createRemoteJWKSet>;
+  private readonly jwtIssuer: string;
 
   constructor(private readonly configService: ConfigService) {
-    const secret = this.configService.get<string>('SUPABASE_JWT_SECRET');
-    if (!secret?.trim()) {
+    const supabaseUrl = this.normalizeSupabaseUrl(
+      this.configService.get<string>('SUPABASE_URL'),
+    );
+
+    if (!supabaseUrl) {
       throw new InternalServerErrorException(
-        'SUPABASE_JWT_SECRET is not configured on the API server.',
+        'SUPABASE_URL must be set in apps/api/.env for JWT verification.',
       );
     }
-    this.jwtSecret = secret;
+
+    // Supabase issues modern access tokens signed with ES256/RS256.
+    // We verify them using the public JWKS endpoint for the project.
+    this.jwtIssuer = `${supabaseUrl}/auth/v1`;
+    this.jwks = createRemoteJWKSet(
+      new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`),
+    );
   }
 
-  verifyAccessToken(token: string): SupabaseJwtPayload {
+  /** Verify a Supabase access token and return the auth user id + email. */
+  async verifyAccessToken(token: string): Promise<SupabaseJwtPayload> {
     try {
-      const payload = jwt.verify(token, this.jwtSecret) as SupabaseJwtPayload;
-
-      if (!payload.sub) {
-        throw new UnauthorizedException(AUTH_MESSAGES.invalidToken);
-      }
-
-      return payload;
+      const { payload } = await jwtVerify(token, this.jwks, {
+        issuer: this.jwtIssuer,
+      });
+      return this.toSupabasePayload(payload);
     } catch {
       throw new UnauthorizedException(AUTH_MESSAGES.invalidToken);
     }
   }
 
+  /** Read the Bearer token from the Authorization header. */
   extractBearerToken(authorizationHeader: string | undefined): string {
     if (!authorizationHeader?.startsWith('Bearer ')) {
       throw new UnauthorizedException(AUTH_MESSAGES.missingToken);
@@ -47,5 +56,21 @@ export class SupabaseJwtService {
     }
 
     return token;
+  }
+
+  private normalizeSupabaseUrl(value: string | undefined): string | null {
+    const trimmed = value?.trim().replace(/\/$/, '');
+    return trimmed ? trimmed : null;
+  }
+
+  private toSupabasePayload(payload: JWTPayload): SupabaseJwtPayload {
+    if (!payload.sub) {
+      throw new UnauthorizedException(AUTH_MESSAGES.invalidToken);
+    }
+
+    return {
+      sub: payload.sub,
+      email: typeof payload.email === 'string' ? payload.email : undefined,
+    };
   }
 }
