@@ -7,19 +7,21 @@ export function useAuth() {
   const user = useState<User | null>('auth-user', () => null)
   const authReady = useState('auth-ready', () => false)
 
+  function applySession(nextSession: Session | null) {
+    session.value = nextSession
+    user.value = nextSession?.user ?? null
+    authReady.value = true
+  }
+
   async function fetchSession(): Promise<Session | null> {
     const { data, error } = await supabase.auth.getSession()
 
     if (error) {
-      session.value = null
-      user.value = null
-      authReady.value = true
+      applySession(null)
       return null
     }
 
-    session.value = data.session
-    user.value = data.session?.user ?? null
-    authReady.value = true
+    applySession(data.session)
     return data.session
   }
 
@@ -33,7 +35,7 @@ export function useAuth() {
     password: string
     contactName: string
   }) {
-    return supabase.auth.signUp({
+    const result = await supabase.auth.signUp({
       email: input.email.trim(),
       password: input.password,
       options: {
@@ -42,19 +44,30 @@ export function useAuth() {
         }
       }
     })
+
+    if (result.data.session) {
+      applySession(result.data.session)
+    }
+
+    return result
   }
 
   async function signInEmployer(input: { email: string; password: string }) {
-    return supabase.auth.signInWithPassword({
+    const result = await supabase.auth.signInWithPassword({
       email: input.email.trim(),
       password: input.password
     })
+
+    if (result.data.session) {
+      applySession(result.data.session)
+    }
+
+    return result
   }
 
   async function signOut() {
     const { error } = await supabase.auth.signOut()
-    session.value = null
-    user.value = null
+    applySession(null)
     return { error }
   }
 
@@ -62,9 +75,7 @@ export function useAuth() {
     void fetchSession()
 
     supabase.auth.onAuthStateChange((_event, nextSession) => {
-      session.value = nextSession
-      user.value = nextSession?.user ?? null
-      authReady.value = true
+      applySession(nextSession)
     })
   }
 

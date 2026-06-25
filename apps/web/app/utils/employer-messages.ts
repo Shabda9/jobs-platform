@@ -5,6 +5,8 @@ export const EMPLOYER_AUTH_MESSAGES = {
   signupConfirmTitle: 'Confirm your email',
   signupConfirmBody:
     'We sent a confirmation link to your email. After confirming, log in to access your employer dashboard.',
+  signupNoSessionBody:
+    'Your account was created but no login session was issued. Confirm your email, or if you disabled email confirmation in Supabase after signing up, delete this test user in Supabase and sign up again.',
   loginErrorTitle: 'Could not log in',
   signupErrorTitle: 'Could not create account',
   provisionErrorTitle: 'Could not finish setting up your account',

@@ -6,6 +6,7 @@ import {
   type EmployerLoginSchema
 } from '~/schemas/employer-login.schema'
 import { parseApiError } from '~/utils/api-error'
+import { formatSupabaseAuthError } from '~/utils/employer-auth'
 import { EMPLOYER_AUTH_MESSAGES } from '~/utils/employer-messages'
 
 definePageMeta({
@@ -33,7 +34,7 @@ async function onSubmit(event: FormSubmitEvent<EmployerLoginSchema>) {
 
     if (error) {
       errorTitle.value = EMPLOYER_AUTH_MESSAGES.loginErrorTitle
-      errors.value = [error.message]
+      errors.value = [formatSupabaseAuthError(error.message)]
       return
     }
 

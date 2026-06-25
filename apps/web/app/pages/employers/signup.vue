@@ -6,6 +6,7 @@ import {
   type EmployerSignupSchema
 } from '~/schemas/employer-signup.schema'
 import { parseApiError } from '~/utils/api-error'
+import { formatSupabaseAuthError } from '~/utils/employer-auth'
 import { EMPLOYER_AUTH_MESSAGES } from '~/utils/employer-messages'
 
 definePageMeta({
@@ -17,7 +18,7 @@ useSeoMeta({
 })
 
 const route = useRoute()
-const { signUpEmployer, session, fetchSession } = useAuth()
+const { signUpEmployer } = useAuth()
 
 const state = reactive(createEmployerSignupFormState())
 const submitting = ref(false)
@@ -35,13 +36,11 @@ async function onSubmit(event: FormSubmitEvent<EmployerSignupSchema>) {
 
     if (error) {
       errorTitle.value = EMPLOYER_AUTH_MESSAGES.signupErrorTitle
-      errors.value = [error.message]
+      errors.value = [formatSupabaseAuthError(error.message)]
       return
     }
 
-    await fetchSession()
-
-    if (session.value) {
+    if (data.session) {
       await bootstrapEmployerAccount()
       const redirect =
         typeof route.query.redirect === 'string'
@@ -82,10 +81,10 @@ async function onSubmit(event: FormSubmitEvent<EmployerSignupSchema>) {
 
       <UAlert
         v-if="awaitingEmailConfirm"
-        color="success"
+        color="warning"
         variant="subtle"
         :title="EMPLOYER_AUTH_MESSAGES.signupConfirmTitle"
-        :description="EMPLOYER_AUTH_MESSAGES.signupConfirmBody"
+        :description="EMPLOYER_AUTH_MESSAGES.signupNoSessionBody"
       />
 
       <UAlert

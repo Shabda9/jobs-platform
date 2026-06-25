@@ -11,3 +11,17 @@ export function getEmployerContactNameFromMetadata(
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
 }
+
+/** Map raw Supabase Auth errors to clearer employer-facing copy. */
+export function formatSupabaseAuthError(message: string): string {
+  if (/email not confirmed/i.test(message)) {
+    return (
+      'Your email address has not been confirmed yet. If you signed up before ' +
+      'email confirmation was turned off in Supabase, delete the test user in ' +
+      'Supabase Dashboard → Authentication → Users and sign up again, or open ' +
+      'the user there and choose Confirm email.'
+    )
+  }
+
+  return message
+}
