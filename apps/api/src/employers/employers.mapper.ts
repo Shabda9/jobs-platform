@@ -1,4 +1,4 @@
-import type { AppUser } from '@prisma/client';
+import type { AppUser, EmployerProfile } from '@prisma/client';
 
 export interface EmployerMeResponse {
   id: string;
@@ -7,14 +7,18 @@ export interface EmployerMeResponse {
   hasCompanyProfile: boolean;
 }
 
+type AppUserWithProfile = AppUser & {
+  employerProfile: EmployerProfile | null;
+};
+
+/** Map a Prisma AppUser to the employer profile API response. */
 export function toEmployerMeResponse(
-  appUser: AppUser,
-  hasCompanyProfile: boolean,
+  appUser: AppUserWithProfile,
 ): EmployerMeResponse {
   return {
     id: appUser.id,
     email: appUser.email,
     role: appUser.role,
-    hasCompanyProfile,
+    hasCompanyProfile: appUser.employerProfile != null,
   };
 }

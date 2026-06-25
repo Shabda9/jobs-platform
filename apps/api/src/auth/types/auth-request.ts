@@ -4,8 +4,6 @@ import type { AppUser } from '@prisma/client';
 export interface SupabaseJwtPayload {
   sub: string;
   email?: string;
-  role?: string;
-  aud?: string;
 }
 
 export interface AuthenticatedRequest extends Request {
